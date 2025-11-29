@@ -1,0 +1,28 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Select EUC Device",
+                "description": "Select your EUC device from the list or choose to enter the MAC address manually.",
+                "data": {
+                    "device": "Device"
+                }
+            },
+            "manual": {
+                "title": "Enter MAC Address",
+                "description": "Enter the MAC address of your EUC device.",
+                "data": {
+                    "mac_address": "MAC Address"
+                }
+            }
+        },
+        "error": {
+            "invalid_mac": "Invalid MAC address format. Use format: XX:XX:XX:XX:XX:XX",
+            "cannot_connect": "Failed to connect to device",
+            "unknown": "Unexpected error occurred"
+        },
+        "abort": {
+            "already_configured": "This device is already configured"
+        }
+    }
+}

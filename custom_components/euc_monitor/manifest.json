@@ -1,0 +1,15 @@
+{
+    "domain": "euc_monitor",
+    "name": "EUC Monitor",
+    "codeowners": [
+        "@sulco"
+    ],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/sulco/hass-euc",
+    "iot_class": "local_polling",
+    "requirements": [
+        "bleak>=0.21.0"
+    ],
+    "version": "1.0.0"
+}
