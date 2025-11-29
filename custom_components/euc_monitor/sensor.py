@@ -49,7 +49,10 @@ class EUCSensor(CoordinatorEntity, SensorEntity):
         self._attr_entity_registry_enabled_default = sensor_config.get(
             "enabled_default", True
         )
-        self._attr_entity_category = sensor_config.get("entity_category")
+
+        # Set display precision for voltage sensors
+        if "cell" in sensor_key or "voltage" in sensor_key:
+            self._attr_suggested_display_precision = 2
 
         # Device info
         self._attr_device_info = DeviceInfo(
@@ -63,17 +66,7 @@ class EUCSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Return the state of the sensor."""
         if self.coordinator.data:
-            value = self.coordinator.data.get(self._sensor_key)
-            # Round floating point values for cleaner display
-            if isinstance(value, float):
-                # Different precision for different sensor types
-                if "cell" in self._sensor_key or "voltage" in self._sensor_key:
-                    return round(value, 3)
-                elif "distance" in self._sensor_key:
-                    return round(value, 2)
-                else:
-                    return round(value, 1)
-            return value
+            return self.coordinator.data.get(self._sensor_key)
         return None
 
     @property

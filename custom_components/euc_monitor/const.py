@@ -89,7 +89,7 @@ SENSOR_TYPES = {
         "icon": "mdi:battery-low",
         "device_class": "voltage",
         "state_class": "measurement",
-        "enabled_default": True,
+        "enabled_default": False,
     },
     "bms1_max_cell": {
         "name": "BMS 1 Max Cell",
@@ -97,7 +97,7 @@ SENSOR_TYPES = {
         "icon": "mdi:battery-high",
         "device_class": "voltage",
         "state_class": "measurement",
-        "enabled_default": True,
+        "enabled_default": False,
     },
     "bms1_avg_cell": {
         "name": "BMS 1 Avg Cell",
@@ -105,7 +105,7 @@ SENSOR_TYPES = {
         "icon": "mdi:battery-medium",
         "device_class": "voltage",
         "state_class": "measurement",
-        "enabled_default": True,
+        "enabled_default": False,
     },
     "bms1_delta": {
         "name": "BMS 1 Delta",
@@ -129,7 +129,7 @@ SENSOR_TYPES = {
         "icon": "mdi:battery-low",
         "device_class": "voltage",
         "state_class": "measurement",
-        "enabled_default": True,
+        "enabled_default": False,
     },
     "bms2_max_cell": {
         "name": "BMS 2 Max Cell",
@@ -137,7 +137,7 @@ SENSOR_TYPES = {
         "icon": "mdi:battery-high",
         "device_class": "voltage",
         "state_class": "measurement",
-        "enabled_default": True,
+        "enabled_default": False,
     },
     "bms2_avg_cell": {
         "name": "BMS 2 Avg Cell",
@@ -204,7 +204,7 @@ SENSOR_TYPES = {
         "icon": "mdi:current-ac",
         "device_class": "current",
         "state_class": "measurement",
-        "enabled_default": False,
+        "enabled_default": True,
     },
     "bms2_current": {
         "name": "BMS 2 Current",
@@ -212,7 +212,7 @@ SENSOR_TYPES = {
         "icon": "mdi:current-ac",
         "device_class": "current",
         "state_class": "measurement",
-        "enabled_default": False,
+        "enabled_default": True,
     },
 }
 
