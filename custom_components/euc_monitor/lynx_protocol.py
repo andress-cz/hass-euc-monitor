@@ -272,3 +272,7 @@ class LynxDecoder:
     def get_data(self):
         """Get the last decoded data."""
         return self.last_data
+
+    def clear_data(self):
+        """Clear the last data."""
+        self.last_data = None

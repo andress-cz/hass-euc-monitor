@@ -72,5 +72,5 @@ class EUCSensor(CoordinatorEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        # Entity is available if coordinator has data (device connected)
-        return self.coordinator.last_update_success and bool(self.coordinator.data)
+        # Entity is available only if we have data from the device
+        return self.coordinator.data is not None and len(self.coordinator.data) > 0

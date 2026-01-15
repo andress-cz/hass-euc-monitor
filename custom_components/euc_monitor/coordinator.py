@@ -1,13 +1,14 @@
 """Data update coordinator for EUC Monitor."""
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 from typing import Any
 
-from bleak import BleakClient, BleakScanner
-from bleak.exc import BleakError
-
+from bleak import BleakClient
+from bleak_retry_connector import establish_connection
+from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -42,64 +43,78 @@ class EUCDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             # Ensure we're connected
             if not self.client or not self.client.is_connected:
-                await self._connect()
+                # Use a smaller timeout for connection attempts to avoid blocking
+                # the coordinator update cycle for too long when device is off
+                try:
+                    async with asyncio.timeout(30):
+                        await self._connect()
+                except (asyncio.TimeoutError, Exception) as err:
+                    _LOGGER.debug("Device not available (expected if off): %s", err)
+                    # When device is off, we want to clear data so entities show as unavailable
+                    self.decoder.clear_data()
+                    return {}
 
             # Return the latest decoded data
             data = self.decoder.get_data()
             if data is None:
-                # No data received yet, return empty dict
                 return {}
             return data
 
-        except BleakError as err:
-            # Disconnect and raise UpdateFailed
-            if self.client:
-                try:
-                    await self.client.disconnect()
-                except Exception:
-                    pass
-                self.client = None
+        except Exception as err:
+            _LOGGER.debug("Update failed: %s", err)
+            self._handle_disconnect()
             raise UpdateFailed(f"BLE connection failed: {err}") from err
+
+    def _handle_disconnect(self) -> None:
+        """Helper to handle disconnection state."""
+        if self.client:
+            try:
+                # Fire and forget disconnect
+                self.hass.async_create_task(self.client.disconnect())
+            except Exception:
+                pass
+            self.client = None
+        self.decoder.clear_data()
 
     async def _connect(self) -> None:
         """Connect to the EUC device."""
-        device = None
+        if not self.mac_address:
+            raise UpdateFailed("No MAC address provided")
 
-        if self.mac_address:
-            # Connect to specific MAC address
-            _LOGGER.debug("Connecting to device at %s", self.mac_address)
-            try:
-                self.client = BleakClient(self.mac_address)
-                await self.client.connect()
-                self._device_name = self.client.address
-            except BleakError as err:
-                raise UpdateFailed(f"Failed to connect to {self.mac_address}") from err
-        else:
-            # Scan for device
-            _LOGGER.debug("Scanning for EUC device...")
-            async with BleakScanner() as scanner:
-                async for d, a in scanner.advertisement_data():
-                    if d.name and ("Leaperkim" in d.name or d.name.startswith("LK")):
-                        _LOGGER.debug("Found %s (%s)", d.name, d.address)
-                        device = d
-                        break
-                    if EUC_SERVICE_UUID in a.service_uuids:
-                        _LOGGER.debug("Found device with EUC Service (%s)", d.address)
-                        device = d
-                        break
+        _LOGGER.debug("Connecting to device at %s", self.mac_address)
+        
+        # Get the BLE device from Home Assistant's bluetooth integration
+        device = bluetooth.async_ble_device_from_address(
+            self.hass, self.mac_address, connectable=True
+        )
+        
+        if not device:
+            raise UpdateFailed(f"Could not find device with MAC address {self.mac_address}")
 
-            if not device:
-                raise UpdateFailed("No EUC device found")
-
-            self._device_name = device.name or device.address
-            self.client = BleakClient(device)
-            await self.client.connect()
+        self._device_name = device.name or device.address
+        
+        try:
+            self.client = await establish_connection(
+                BleakClient,
+                device,
+                self._device_name,
+                disconnected_callback=self._on_disconnect,
+            )
+        except Exception as err:
+            raise UpdateFailed(f"Failed to connect to {self.mac_address}: {err}") from err
 
         # Subscribe to notifications
         await self.client.start_notify(
             EUC_CHARACTERISTIC_UUID, self._notification_handler
         )
         _LOGGER.info("Connected to EUC device: %s", self._device_name)
+
+    def _on_disconnect(self, client: BleakClient) -> None:
+        """Handle disconnection."""
+        _LOGGER.info("Disconnected from %s", self.mac_address)
+        self._handle_disconnect()
+        # Notify coordinator that data is now empty
+        self.async_set_updated_data({})
 
     def _notification_handler(self, sender, data: bytearray) -> None:
         """Handle BLE notifications."""
